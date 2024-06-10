@@ -234,3 +234,39 @@ train_student_model(student_model, model, train_loader)
 student_model.save_pretrained('./distilled_student_model')
 tokenizer.save_pretrained('./distilled_student_model')
 
+
+
+# Load the trained student model and tokenizer
+model_path = './distilled_student_model'
+student_model = GPT2ForSequenceClassification.from_pretrained(model_path)
+tokenizer = GPT2Tokenizer.from_pretrained(model_path)
+
+# Set the model to evaluation mode
+student_model.eval()
+
+# Define a function to classify new messages
+def classify_message(message):
+    # Preprocess the input text
+    inputs = tokenizer(message, return_tensors='pt', padding=True, truncation=True, max_length=512)
+    
+    # Run the inference
+    with torch.no_grad():
+        outputs = student_model(**inputs)
+    
+    # Get the predicted label
+    logits = outputs.logits
+    predicted_label = torch.argmax(logits, dim=1).item()
+    
+    return 'spam' if predicted_label == 1 else 'ham'
+
+# Test the model with new text messages
+test_messages = [
+    "Congratulations! You've won a $1,000 Walmart gift card. Go to http://bit.ly/12345 to claim now.",
+    "Hey, can we reschedule our meeting to 3 PM tomorrow?",
+    "URGENT! Your account has been compromised. Click here to reset your password."
+]
+
+for message in test_messages:
+    label = classify_message(message)
+    print(f"Message: {message}\nClassified as: {label}\n")
+
